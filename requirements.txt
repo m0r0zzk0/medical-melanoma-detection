@@ -1,0 +1,45 @@
+# Core ML/CV
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
+
+# Image processing
+opencv-python>=4.8.0
+Pillow>=10.0.0
+scikit-image>=0.21.0
+imageio>=2.33.0
+
+# Data handling
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+
+# API & Serving
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.0.0
+python-multipart>=0.0.6
+
+# Augmentation & preprocessing
+albumentations>=1.3.0
+
+# Monitoring & Logging
+tensorboard>=2.14.0
+tqdm>=4.66.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Optimization & Deployment
+onnx>=1.14.0
+onnx-simplifier>=0.4.36
+
+# Utility
+matplotlib>=3.8.0
+seaborn>=0.12.0
+pyyaml>=6.0.0
+python-dotenv>=1.0.0
+
+# Optional (if using ISIC API)
+pyisic>=0.0.11
