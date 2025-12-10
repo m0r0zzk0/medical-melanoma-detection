@@ -1,9 +1,8 @@
-# Data (don't commit large files)
-data/
-*.jpg
-*.png
-*.jpeg
-*.csv
+# Data files (but keep metadata)
+data/isic/
+data/*.jpg
+data/*.png
+data/*.jpeg
 
 # Python
 __pycache__/
