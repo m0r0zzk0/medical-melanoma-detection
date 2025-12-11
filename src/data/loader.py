@@ -28,7 +28,7 @@ class ISICDataset(Dataset):
         
         # Создаём маппинг диагноза → число
         self.diagnosis_to_label = {
-            'Melanoma': 1,
+            'Malignant': 1,
             'Benign': 0
         }
         
@@ -44,40 +44,35 @@ class ISICDataset(Dataset):
         isic_id = row['isic_id']
         diagnosis = row['diagnosis_1']
         
+        # Пропускаем если диагноз неизвестен
+        if diagnosis not in self.diagnosis_to_label:
+            # Возвращаем первый валидный элемент вместо None
+            return self.__getitem__((idx + 1) % len(self))
+        
         # Путь к изображению
         img_path = self.data_dir / f"{isic_id}.jpg"
         
-        # Загружаем изображение
+        # Если файл не существует - пропускаем
         if not img_path.exists():
-            print(f"Warning: {img_path} not found")
-            return None
+            return self.__getitem__((idx + 1) % len(self))
         
         img = cv2.imread(str(img_path))
-        
-        # Конвертируем BGR в RGB (OpenCV загружает в BGR)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        
-        # Ресайзим до нужного размера
         img = cv2.resize(img, (self.img_size, self.img_size))
-        
-        # Нормализуем (значения 0-1)
         img = img.astype(np.float32) / 255.0
         
-        # Конвертируем диагноз в число
-        label = self.diagnosis_to_label.get(diagnosis, -1)
-        
-        # Если нужны аугментации (потом добавим)
         if self.transform:
             img = self.transform(img)
         
-        # Конвертируем в torch tensor
-        img = torch.from_numpy(img).permute(2, 0, 1)  # HWC -> CHW
+        img = torch.from_numpy(img).permute(2, 0, 1)
+        label = self.diagnosis_to_label[diagnosis]
         
         return {
             'image': img,
             'label': label,
             'isic_id': isic_id
         }
+
 
 
 # ДЛЯ ТЕСТИРОВАНИЯ

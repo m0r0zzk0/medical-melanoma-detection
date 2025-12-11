@@ -139,7 +139,7 @@ def main():
         train_dataset,
         batch_size=BATCH_SIZE,
         shuffle=True,
-        num_workers=0,  # Windows может иметь проблемы с num_workers > 0
+        num_workers=0,  
         pin_memory=True if torch.cuda.is_available() else False
     )
     
