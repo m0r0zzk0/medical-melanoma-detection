@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader, random_split, WeightedRandomSampler, ConcatDataset, Subset
 from torchvision import models
 import numpy as np
 from pathlib import Path
@@ -128,12 +128,12 @@ def main():
     # ============== DATASET & DATALOADER ==============
     print("\nLoading dataset...")
     
-    
+    # ✅ Создаём dataset с train=True для augmentation
     dataset = ISICDataset(
         data_dir='data/isic',
         metadata_path='data/metadata.csv',
         img_size=IMG_SIZE,
-        train=True  
+        train=True
     )
     
     # Split на train/val (80/20)
@@ -144,11 +144,46 @@ def main():
     print(f"Train samples: {train_size}")
     print(f"Val samples: {val_size}")
     
+    # ============== OVERSAMPLING ✅ ДОБАВИЛИ ==============
+    # Найди melanoma samples в training set
+    train_melanoma_count = 0
+    train_benign_count = 0
+    
+    for idx in train_dataset.indices:
+        diagnosis = dataset.metadata.iloc[idx]['diagnosis_1']
+        if diagnosis == 'Malignant':
+            train_melanoma_count += 1
+        else:
+            train_benign_count += 1
+    
+    print(f"\nTrain set composition:")
+    print(f"  Melanoma: {train_melanoma_count}")
+    print(f"  Benign: {train_benign_count}")
+    
+    # Oversample melanoma (дублируй ~30 раз для баланса)
+    oversampling_factor = int(train_benign_count / train_melanoma_count)
+    print(f"  Oversampling factor: {oversampling_factor}x")
+    
+    # Создай список всех индексов с oversampling
+    train_indices = list(train_dataset.indices)
+    melanoma_indices_in_train = [
+        i for i in train_indices 
+        if dataset.metadata.iloc[i]['diagnosis_1'] == 'Malignant'
+    ]
+    
+    # Добавь дополнительные копии melanoma samples
+    oversampled_indices = train_indices + melanoma_indices_in_train * (oversampling_factor - 1)
+    print(f"  Total after oversampling: {len(oversampled_indices)}")
+    
+    # Создай новый dataset с oversampling
+    oversampled_dataset = Subset(dataset, oversampled_indices)
+    
+    # ============== DATALOADER ==============
     train_loader = DataLoader(
-        train_dataset,
+        oversampled_dataset,
         batch_size=BATCH_SIZE,
         shuffle=True,
-        num_workers=0,  
+        num_workers=3,  # ✅ УВЕЛИЧИЛИ с 0 на 3
         pin_memory=True if torch.cuda.is_available() else False
     )
     
@@ -156,7 +191,7 @@ def main():
         val_dataset,
         batch_size=BATCH_SIZE,
         shuffle=False,
-        num_workers=0,
+        num_workers=2,  # ✅ ДОБАВИЛИ
         pin_memory=True if torch.cuda.is_available() else False
     )
     
@@ -188,7 +223,6 @@ def main():
     pos_weight = class_weights[1] / class_weights[0]
     criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([pos_weight], device=DEVICE))
     
-    # ✅ ИЗМЕНИЛИ: используем SGD с momentum вместо Adam (часто лучше для больших батчей)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     
     # ============== TRAINING ==============

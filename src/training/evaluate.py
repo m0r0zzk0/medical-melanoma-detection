@@ -5,7 +5,9 @@ import sys
 from sklearn.metrics import (
     confusion_matrix, 
     roc_auc_score, 
-    classification_report
+    classification_report,
+    roc_curve,
+    auc
 )
 from tqdm import tqdm
 
@@ -27,7 +29,7 @@ def evaluate():
         img_size=224
     )
     
-    val_loader = DataLoader(dataset, batch_size=256, shuffle=False, num_workers=0)
+    val_loader = DataLoader(dataset, batch_size=256, shuffle=False, num_workers=3)
     
     # Load model
     model = models.resnet50(weights=None)  # ← НЕ загружаем pretrained
@@ -82,6 +84,52 @@ def evaluate():
     # AUC-ROC
     auc = roc_auc_score(all_labels, all_probs)
     print(f"AUC-ROC Score: {auc:.4f}\n")
+    print("\n" + "="*60)
+    print("THRESHOLD OPTIMIZATION")
+    print("="*60)
 
+    model.eval()
+    all_probs = []
+    all_labels = []
+
+    with torch.no_grad():
+        for batch in val_loader:
+            images = batch['image'].to(DEVICE)
+            labels = batch['label'].to(DEVICE)
+            
+            outputs = model(images)
+            probs = torch.sigmoid(outputs).cpu().numpy().flatten()
+            
+            all_probs.extend(probs)
+            all_labels.extend(labels.cpu().numpy())
+
+    all_probs = np.array(all_probs)
+    all_labels = np.array(all_labels)
+
+    # Рассчитай ROC curve
+    fpr, tpr, thresholds = roc_curve(all_labels, all_probs)
+
+    # Найди optimal threshold (Youden Index)
+    youden_index = tpr - fpr
+    optimal_idx = np.argmax(youden_index)
+    optimal_threshold = thresholds[optimal_idx]
+
+    print(f"\nOptimal Threshold (Youden): {optimal_threshold:.4f}")
+    print(f"  At this threshold:")
+    print(f"    Sensitivity (TPR): {tpr[optimal_idx]:.4f}")
+    print(f"    Specificity (1-FPR): {1 - fpr[optimal_idx]:.4f}")
+
+    # Применяй этот threshold
+    y_pred_optimal = (all_probs >= optimal_threshold).astype(int)
+
+    print(f"\nWith optimal threshold:")
+    print(classification_report(all_labels, y_pred_optimal, 
+                            target_names=['Benign', 'Melanoma']))
+
+    
+    with open('checkpoints/optimal_threshold.txt', 'w') as f:
+        f.write(f"{optimal_threshold:.6f}")
+        
+    print(f"\n Optimal threshold saved to checkpoints/optimal_threshold.txt")
 if __name__ == '__main__':
     evaluate()

@@ -82,11 +82,9 @@ text
 
 python src/training/train.py
 
-text
-
 **Параметры (можешь менять в коде):**
 
-- `BATCH_SIZE`: 32
+- `BATCH_SIZE`: 256
 - `LEARNING_RATE`: 0.001
 - `NUM_EPOCHS`: 3 (рекомендуется 10-20 для production)
 - `IMG_SIZE`: 224x224
@@ -96,11 +94,20 @@ text
 - Обученная модель сохраняется в `checkpoints/best_model_epoch*.pth`
 - История обучения в `checkpoints/training_history.json`
 
-### Результаты
+## 🔄 Training Progress
 
-После обучения увидишь:
-Train Loss: 0.25 | Train Acc: 0.99
-Val Loss: 0.18 | Val Acc: 0.98
+### Week 1: Baseline Model
+
+- ✅ Loaded ISIC 2020 dataset (33,126 images)
+- ✅ ResNet50 fine-tuning
+- ⚠️ Problem identified: Class imbalance (1.76% melanoma)
+- Result: Model predicts everything as benign (0% sensitivity)
+
+### Week 2: Weighted Loss (In Progress)
+
+- 🔄 Implementing BCEWithLogitsLoss with pos_weight
+- 🔄 Training ResNet50 with class weights
+- Expected: 70-85% sensitivity, balanced specificity
 
 ## 📈 Планы развития (Week 2-3)
 

@@ -4,6 +4,8 @@ import numpy as np
 from pathlib import Path
 from torch.utils.data import Dataset, DataLoader
 import torch
+from .augmentation import get_medical_augmentation
+from PIL import Image  
 
 class ISICDataset(Dataset):
     """
@@ -15,10 +17,11 @@ class ISICDataset(Dataset):
         img_size (int): Размер изображения (по умолчанию 224x224)
     """
     
-    def __init__(self, data_dir, metadata_path, img_size=224, transform=None):
+    def __init__(self, data_dir, metadata_path, img_size=224, train=True):
         self.data_dir = Path(data_dir)
         self.img_size = img_size
-        self.transform = transform
+        self.train = train
+        self.augment = get_medical_augmentation(train=train)
         
         # Загружаем metadata
         self.metadata = pd.read_csv(metadata_path)
@@ -44,56 +47,53 @@ class ISICDataset(Dataset):
         isic_id = row['isic_id']
         diagnosis = row['diagnosis_1']
         
-        # Пропускаем если диагноз неизвестен
         if diagnosis not in self.diagnosis_to_label:
-            # Возвращаем первый валидный элемент вместо None
             return self.__getitem__((idx + 1) % len(self))
         
-        # Путь к изображению
         img_path = self.data_dir / f"{isic_id}.jpg"
-        
-        # Если файл не существует - пропускаем
         if not img_path.exists():
             return self.__getitem__((idx + 1) % len(self))
         
+        # Читаем как OpenCV
         img = cv2.imread(str(img_path))
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (self.img_size, self.img_size))
-        img = img.astype(np.float32) / 255.0
         
-        if self.transform:
-            img = self.transform(img)
+        # ✅ КРИТИЧНО: Конвертируем в PIL для transforms
+        img_pil = Image.fromarray(img.astype(np.uint8))
         
-        img = torch.from_numpy(img).permute(2, 0, 1)
+        # ✅ Применяем augmentation (работает с PIL)
+        img_tensor = self.augment(img_pil)
+        
         label = self.diagnosis_to_label[diagnosis]
         
         return {
-            'image': img,
+            'image': img_tensor,
             'label': label,
             'isic_id': isic_id
         }
 
 
 
+
+
 # ДЛЯ ТЕСТИРОВАНИЯ
 if __name__ == "__main__":
-    # Пути
     data_dir = "data/isic"
     metadata_path = "data/metadata.csv"
     
-    # Создаём dataset
-    dataset = ISICDataset(data_dir, metadata_path, img_size=224)
+    # ✅ Создавай с train=True для augmentation
+    dataset = ISICDataset(data_dir, metadata_path, img_size=224, train=True)
     
-    # Проверяем несколько примеров
     print("\nСнимаем несколько примеров:")
     for i in range(min(5, len(dataset))):
         sample = dataset[i]
         print(f"  {i}: {sample['isic_id']} - Label: {sample['label']} - Shape: {sample['image'].shape}")
     
-    # Создаём DataLoader (для batching)
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True, num_workers=0)
     
     print("\nПроверяем DataLoader:")
     batch = next(iter(dataloader))
     print(f"  Batch size: {batch['image'].shape}")
     print(f"  Labels: {batch['label']}")
+
