@@ -136,10 +136,9 @@ python src/training/train.py
 
 Этот проект создан в образовательных целях.
 
-## 👤 Автор
+## Final Results
 
-Разработано как portfolio project для CV/ML позиции.
-
----
-
-**Обновлено**: Декабрь 2025
+- Sensitivity: 87.67% (finds 88 of 100 melanomas)
+- Specificity: 71.22% (correctly identifies benign)
+- AUC-ROC: 0.8769
+- Optimal Threshold: 0.9690

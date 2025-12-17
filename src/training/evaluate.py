@@ -29,7 +29,8 @@ def evaluate():
         img_size=224
     )
     
-    val_loader = DataLoader(dataset, batch_size=256, shuffle=False, num_workers=3)
+    val_loader = DataLoader(dataset, batch_size=256, shuffle=False, num_workers=3
+    )
     
     # Load model
     model = models.resnet50(weights=None)  # ← НЕ загружаем pretrained
