@@ -82,7 +82,7 @@ if __name__ == "__main__":
     data_dir = "data/isic"
     metadata_path = "data/metadata.csv"
     
-    # ✅ Создавай с train=True для augmentation
+    # train=True для augmentation
     dataset = ISICDataset(data_dir, metadata_path, img_size=224, train=True)
     
     print("\nСнимаем несколько примеров:")

@@ -23,7 +23,7 @@ def get_medical_augmentation(train=True):
                 hue=0.05
             ),
             
-            # ✅ ДОБАВИЛИ: ConvertImageDtype перед Normalize
+        
             transforms.ToTensor(),  # PIL Image → Tensor
             
             # Normalization (ImageNet standards)

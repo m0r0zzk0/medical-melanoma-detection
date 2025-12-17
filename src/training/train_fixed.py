@@ -128,7 +128,7 @@ def main():
     # ============== DATASET & DATALOADER ==============
     print("\nLoading dataset...")
     
-    # ✅ ИСПРАВКА: Создай ДВА отдельных dataset
+    
     # Dataset с augmentation для training
     train_dataset_full = ISICDataset(
         data_dir='data/isic',
@@ -162,7 +162,6 @@ def main():
     print(f"Val samples: {len(val_dataset)} (no augmentation)")
     
     # ============== OVERSAMPLING ==============
-    # Найди melanoma samples в training set
     train_melanoma_count = 0
     train_benign_count = 0
     
@@ -177,22 +176,22 @@ def main():
     print(f"  Melanoma: {train_melanoma_count}")
     print(f"  Benign: {train_benign_count}")
     
-    # Oversample melanoma (дублируй для баланса)
+    # Oversample melanoma
     oversampling_factor = int(train_benign_count / train_melanoma_count)
     print(f"  Oversampling factor: {oversampling_factor}x")
     
-    # Создай список всех индексов с oversampling
+    # Создаем список всех индексов с oversampling
     train_indices = list(train_dataset.indices)
     melanoma_indices_in_train = [
         i for i in train_indices 
         if train_dataset_full.metadata.iloc[i]['diagnosis_1'] == 'Malignant'
     ]
     
-    # Добавь дополнительные копии melanoma samples
+    # Добавляем дополнительные копии melanoma samples
     oversampled_indices = train_indices + melanoma_indices_in_train * (oversampling_factor - 1)
     print(f"  Total after oversampling: {len(oversampled_indices)}")
     
-    # Создай новый dataset с oversampling
+    # Создаем новый dataset с oversampling
     oversampled_dataset = Subset(train_dataset_full, oversampled_indices)
     
     # ============== DATALOADER ==============
@@ -230,7 +229,7 @@ def main():
     
     # ============== LOSS & OPTIMIZER ==============
     # Вычисляем веса классов
-    class_counts = np.array([32539, 584])  # benign, melanoma
+    class_counts = np.array([train_benign_count, train_melanoma_count])  # benign, melanoma
     total = class_counts.sum()
     class_weights = total / (2 * class_counts)
     
