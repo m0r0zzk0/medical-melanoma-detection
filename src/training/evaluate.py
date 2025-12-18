@@ -33,19 +33,38 @@ def evaluate():
     )
     
     # Load model
-    model = models.resnet50(weights=None)  # ← НЕ загружаем pretrained
+    model = models.resnet50(weights=None)  
     model.fc = nn.Linear(model.fc.in_features, 1)
     
-    checkpoint_path = Path('checkpoints/best_model_epoch1.pth')
-    if checkpoint_path.exists():
+    def find_best_model(checkpoint_dir='checkpoints'):
+        """Найди файл с лучшей моделью"""
+        checkpoint_dir = Path(checkpoint_dir)
+        
+        # Найди все best_model_epochX.pth файлы
+        best_models = sorted(checkpoint_dir.glob('best_model_epoch*.pth'))
+        
+        if not best_models:
+            print(" No best models found!")
+            return None
+        
+        
+        latest_best_model = best_models[-1]
+        
+        print(f" Found best model: {latest_best_model}")
+        return latest_best_model
+
+    # В evaluate():
+    checkpoint_path = find_best_model()
+    if checkpoint_path:
         model.load_state_dict(torch.load(checkpoint_path, map_location=DEVICE))
-        print(f"✅ Loaded model from {checkpoint_path}")
+        print(f" Loaded model from {checkpoint_path}")
     else:
-        print(f"❌ Model not found at {checkpoint_path}")
+        print(" Model not found")
         return
-    
+
     model = model.to(DEVICE)
     model.eval()
+
     
     # Predictions
     all_preds = []
@@ -54,7 +73,7 @@ def evaluate():
     
     print("\nEvaluating...")
     with torch.no_grad():
-        for batch in tqdm(val_loader, desc="Evaluation"):  # ← PROGRESS BAR!
+        for batch in tqdm(val_loader, desc="Evaluation"): 
             images = batch['image'].to(DEVICE)
             labels = batch['label'].to(DEVICE)
             
